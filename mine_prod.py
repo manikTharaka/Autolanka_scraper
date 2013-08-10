@@ -14,9 +14,9 @@ def getText(dateString):
     s=s.strip()
     return s
 
-#html = requests.get("http://www.autolanka.com/Buy.asp").content
-html=open('index','r')
-dom = lxml.html.fromstring(html.read())
+html = requests.get("http://www.autolanka.com/Buy.asp").content
+#html=open('index','r')
+dom = lxml.html.fromstring(html)
 #data=minePage(dom)
 
 raw_data=[]
