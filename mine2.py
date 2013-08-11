@@ -14,20 +14,34 @@ def getText(dateString):
     s=s.strip()
     return s
 
-#html = requests.get("http://www.autolanka.com/Buy.asp").content
-html=open('index','r')
-dom = lxml.html.fromstring(html.read())
-#data=minePage(dom)
+def getDomFromFile(url):
+    #html = requests.get("http://www.autolanka.com/Buy.asp").content
+    html=open('index'+str(url),'r')
+    dom = lxml.html.fromstring(html.read())
+    #data=minePage(dom)
+
+    return dom
+
+def getDomFromWeb(url):
+    html = requests.get("http://www.autolanka.com/Buy.asp?ad_category_id=&search=&Page="+str(url)+"#members").content
+    #html=open('index'+url,'r')
+    dom = lxml.html.fromstring(html)
+
+
+    return dom
 
 raw_data=[]
 data=[]
 di={}
-def getRawData():
+
+
+def getRawData(url):
+    dom=getDomFromWeb(url)
     for entry in dom.cssselect('.BuyDataTD'):
         if len(entry) > 0:
             raw_data.append(entry[0].text_content())
 
-def getData():
+def getData(last):
     for i in range(len(raw_data)):
         item=raw_data[i]
         if "Date" in item:
@@ -45,14 +59,53 @@ def getData():
             'Additional_info':getText(sub_list[9]),
 
             }
+
+            if di['Code']==last:
+                print "duplicate found "+str(di['Code'])+", exiting"
+                if len(data)>0:
+                    return data[0]
+                else:
+                    return None
+
             scraperwiki.sql.save(unique_keys=['Code'], data=di)
             data.append(di)
 
-def writeData():
-    for v in data:
-        print str(v)+"\n"
+    return data[0]
+
+def writeData(dataitem):
+    #    scraperwiki.sql.save_var('last_code',str(data[0]['Code']))
+    #for v in data:
+
+    scraperwiki.sql.save_var('last_code',dataitem['Code'])
+    print "wrote the last code"
 
 
-getRawData()
-getData()
-writeData()
+
+
+#################add functionality to mine data from multiple pages and to check for last saved instance
+
+def main():
+    last=getLast()
+    for i in range(2):
+        getRawData(i)
+        first=getData(last)
+        if i==0:
+            if first != None:
+
+                writeData(first)
+            else:
+                print "The first entry is the same as last,exiting"
+                break
+    #getRawData()
+    #getData()
+    #writeData()
+
+
+def getLast():
+    code=scraperwiki.sql.get_var('last_code')
+    if code==None:
+        code=0
+    return code
+
+if __name__=="__main__":
+    main()
